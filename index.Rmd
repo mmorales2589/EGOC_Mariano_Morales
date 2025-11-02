@@ -1,0 +1,121 @@
+---
+title: "Tablero - Planificacion y Costos"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
+
+ESTADO GENERAL DEL PROYECTO
+============================
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+
+```
+
+Column {data-width=600}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+```
+
+### Chart C
+
+```{r}
+
+```
+
+PLANIFICACION
+=========================
+
+* Avance Planificado
+* Avance Real
+* Avance Temporal
+
+```{r}
+# Cargar la librería ggplot2
+library(ggplot2)
+library(dplyr) # Para manipulación de datos, útil para el formato largo
+
+# --- 1. Preparar los datos ---
+meses <- factor(
+    c("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"),
+    levels = c("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+               "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre")
+)
+
+# Avance Teórico (100% en 12 meses, 100/12 ≈ 8.33%)
+avance_teorico <- rep(100/12, 12)
+
+# Avance Real (tus valores proporcionados)
+avance_real <- c(20, 5, 8, 86, 21, 14, 65, 26, 0, 0, 0, 0)
+
+# Crear el data frame inicial
+datos_avance <- data.frame(
+    Mes = meses,
+    Teorico = avance_teorico,
+    Real = avance_real
+)
+
+# Convertir a formato largo para ggplot2
+# Esto crea una fila para cada Mes/TipoAvance/Porcentaje
+datos_largo <- datos_avance %>%
+    tidyr::pivot_longer(
+        cols = c(Teorico, Real),
+        names_to = "TipoAvance",
+        values_to = "Porcentaje"
+    )
+
+# --- 2. Crear el Gráfico con ggplot2 ---
+grafico_avance <- ggplot(datos_largo, aes(x = Mes, y = Porcentaje, fill = TipoAvance)) +
+    # Geometría de Barras. position = "dodge" coloca las barras una al lado de la otra
+    geom_bar(stat = "identity", position = "dodge", width = 0.8) +
+    # Etiquetas de ejes y título
+    labs(
+        title = "Avance de Obra: Teórico vs. Real (Acumulado Mensual)",
+        x = "Mes",
+        y = "Avance (%)",
+        fill = "Tipo de Avance" # Título de la leyenda
+    ) +
+    # Personalizar colores
+    scale_fill_manual(values = c("Teorico" = "#4C78A8", "Real" = "#F58518")) +
+    # Opcional: Ajustar el rango del eje Y para que vaya hasta 100
+    ylim(0, max(datos_largo$Porcentaje) + 5) +
+    # Tema para mejorar la apariencia visual (ej: tema clásico)
+    theme_classic() +
+    # Girar las etiquetas del eje X si son muy largas (no es necesario aquí, pero útil)
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Mostrar el gráfico
+print(grafico_avance)
+
+# Opcional: Gráfico con etiquetas de valor en las barras (más complejo)
+# Puedes usar geom_text, pero requiere calcular la posición, por eso es opcional
+```
+
+
+COSTOS
+===========
+
+* Presupuesto de obra
+* Presupuesto erogado
+* Presupuesto final a termino
+* Avance financiero
+
+|Valor planificado | Valor Ganado | Costo Actual | SPI | CPI|
+|--------------|--------------|--------------|-----------|-------|
+|$515161|$165151|$13515131|0.91|1.05
+
