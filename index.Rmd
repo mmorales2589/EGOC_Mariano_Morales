@@ -10,39 +10,234 @@ output:
 library(flexdashboard)
 ```
 
-ESTADO GENERAL DEL PROYECTO
-============================
+# ESTADO GENERAL DEL PROYECTO
 
-Column {data-width=400}
------------------------------------------------------------------------
+## Column {data-width="400"}
 
-### Chart A
+### Informacion General
 
-```{r}
+-   Obra
+-   Ubicacion
+-   Superficie
+-   Duracion
+-   Presupuesto
 
-```
-
-Column {data-width=600}
------------------------------------------------------------------------
-
-### Chart B
+------------------------------------------------------------------------
 
 ```{r}
 
+# Asegúrate de tener la librería 'gt' instalada: install.packages("gt")
+library(gt)
+library(dplyr)
+
+# 1. Definir el monto
+monto_total <- 33929840323.37
+
+# 2. Crear un dataframe para la tabla
+datos_etiqueta <- data.frame(
+  Etiqueta = "MONTO TOTAL DEL PROYECTO",
+  Monto = monto_total
+)
+
+# 3. Crear la tabla GT (la etiqueta gráfica)
+etiqueta_grafica <- datos_etiqueta %>%
+  gt() %>%
+  # Formatear la columna del monto como moneda
+  fmt_currency(
+    columns = Monto,
+    currency = "USD", # Símbolo de dólar
+    sep_mark = ".",   # Separador de miles (punto)
+    dec_mark = ",",   # Separador de decimales (coma)
+    decimals = 0      # Cero decimales para mayor limpieza
+  ) %>%
+  # Aplicar un estilo destacado a la celda del monto
+  tab_style(
+    style = cell_fill(color = "#E0FFE0"), # Fondo verde muy claro
+    locations = cells_body(columns = Monto)
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold", size = px(30), color = "#00AA00"), # Fuente grande y verde
+    locations = cells_body(columns = Monto)
+  ) %>%
+  # Personalizar el encabezado (la etiqueta)
+  tab_header(
+    title = md("**MONTO TOTAL DEL PROYECTO**")
+  ) %>%
+  # Ocultar la columna de 'Etiqueta' (ya está en el título) y el encabezado de la columna 'Monto'
+  cols_hide(columns = Etiqueta) %>%
+  cols_label(Monto = "") %>%
+  # Eliminar líneas de borde y elementos innecesarios
+  tab_options(
+    table.border.top.color = "#00AA00",
+    table.border.top.width = px(3),
+    table.border.bottom.width = px(0),
+    column_labels.hidden = TRUE
+  )
+
+# 4. Mostrar la etiqueta gráfica
+etiqueta_grafica
+
 ```
 
-### Chart C
+------------------------------------------------------------------------
 
 ```{r}
 
+# Asegúrate de tener la librería 'gt' instalada: install.packages("gt")
+library(gt)
+library(dplyr)
+
+# 1. Definir el plazo
+plazo_total <- 48
+
+# 2. Crear un dataframe para la tabla
+datos_etiqueta_plazo <- data.frame(
+  Etiqueta = "PLAZO TOTAL DE LA OBRA (MESES)",
+  Plazo = plazo_total
+)
+
+# 3. Crear la tabla GT (la etiqueta gráfica)
+etiqueta_grafica_plazo <- datos_etiqueta_plazo %>%
+  gt() %>%
+  # Formatear la columna del plazo (añadiendo el texto "meses")
+  fmt_integer(
+    columns = Plazo
+  ) %>%
+  text_transform(
+    locations = cells_body(columns = Plazo),
+    fn = function(x) {
+      paste(x, "MESES")
+    }
+  ) %>%
+  # Aplicar un estilo destacado a la celda del plazo
+  tab_style(
+    style = cell_fill(color = "#E0F2FF"), # Fondo azul muy claro
+    locations = cells_body(columns = Plazo)
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold", size = px(30), color = "#007BFF"), # Fuente grande y azul
+    locations = cells_body(columns = Plazo)
+  ) %>%
+  # Personalizar el encabezado (la etiqueta)
+  tab_header(
+    title = md("**PLAZO TOTAL DE LA OBRA**")
+  ) %>%
+  # Ocultar la columna de 'Etiqueta' y el encabezado de la columna 'Plazo'
+  cols_hide(columns = Etiqueta) %>%
+  cols_label(Plazo = "") %>%
+  # Eliminar líneas de borde y elementos innecesarios
+  tab_options(
+    table.border.top.color = "#007BFF",
+    table.border.top.width = px(3),
+    table.border.bottom.width = px(0),
+    column_labels.hidden = TRUE
+  )
+
+# 4. Mostrar la etiqueta gráfica
+etiqueta_grafica_plazo
+
 ```
 
-PLANIFICACION
-=========================
+## Column {data-width="600"}
 
-* Avance Planificado
-* Avance Real
-* Avance Temporal
+### Distribucion de costos
+
+```{r}
+
+# Asegúrate de tener estas librerías instaladas:
+# install.packages(c("dplyr", "plotly"))
+
+library(dplyr)
+library(plotly)
+
+# 1. Crear el data frame (usando los datos proporcionados)
+datos_costos <- data.frame(
+  Etapa = c("FUNDACIONES", "ESTRUCTURA", "ALBAÑILERIA", "TERMINACIONES", "INSTALACIONES", "CARPINTERIAS"),
+  Costo = c(2677715484.15, 6799536906.11, 6804389313.68, 3921319730.90, 6066123457.62, 7660755430.91)
+)
+
+# 2. Crear el gráfico interactivo de dona con plotly
+grafico_plotly <- plot_ly(datos_costos, 
+                          labels = ~Etapa, 
+                          values = ~Costo, 
+                          type = 'pie', 
+                          # Configuración para el formato de dona
+                          hole = 0.6,
+                          # Personalización del texto en el tooltip
+                          textinfo = 'label+percent',
+                          # Personalización del tooltip (lo que se muestra al pasar el ratón)
+                          hovertemplate = "<b>Etapa:</b> %{label}<br><b>Costo:</b> $%{value:, .2f}<br><b>Porcentaje:</b> %{percent}<extra></extra>") %>%
+  
+  layout(title = 'Distribucion de los costos directos',
+         # Posiciona el título en el centro de la dona
+         annotations = list(text = 'Costos', x = 0.5, y = 0.5, font = list(size = 18), showarrow = FALSE),
+         showlegend = TRUE)
+
+# 3. Mostrar el gráfico
+grafico_plotly
+
+```
+
+### Cronograma
+
+```{r}
+
+# Cargar librerías
+library(tidyverse)
+library(scales) # Para formatear las etiquetas
+
+# 1. Definir los datos de las tareas
+gantt_data <- data.frame(
+  Etapa = factor(c("FUNDACIONES", "ESTRUCTURA", "ALBAÑILERIA", "TERMINACIONES", "INSTALACIONES", "CARPINTERIAS"),
+                 levels = rev(c("FUNDACIONES", "ESTRUCTURA", "ALBAÑILERIA", "TERMINACIONES", "INSTALACIONES", "CARPINTERIAS"))), # Revierte el orden para que el gráfico quede de arriba a abajo
+  Start = c(1, 9, 17, 25, 33, 41), # Mes de inicio
+  End = c(8, 16, 24, 32, 40, 48),   # Mes de fin (Duración de 8 meses)
+  Duracion = 8
+)
+
+# 2. Crear el diagrama de Gantt con ggplot2
+gantt_chart <- ggplot(gantt_data, aes(y = Etapa)) +
+  
+  # 2.1 Barras principales (la duración de la tarea)
+  geom_segment(aes(x = Start, xend = End, yend = Etapa, color = Etapa), 
+               size = 15, # Grosor de la barra
+               show.legend = FALSE) +
+  
+  # 2.2 Etiquetas de duración (opcional: muestra la duración de 8 meses)
+  geom_text(aes(x = (Start + End) / 2, label = paste0(Duracion, " meses")), 
+            color = "white", size = 3) +
+  
+  # 2.3 Personalización de la escala y ejes
+  scale_x_continuous(breaks = seq(0, 48, by = 4), # Marcas cada 4 meses
+                     limits = c(0, 48), 
+                     expand = c(0, 0)) +
+  
+  # 2.4 Títulos y temas
+  labs(
+    title = "Planificacion de obra",
+    x = "Tiempo (Meses)",
+    y = ""
+  ) +
+  
+  # 2.5 Mejoras estéticas
+  theme_bw() + # Tema blanco y negro
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    panel.grid.major.y = element_blank(), # Elimina líneas horizontales gruesas
+    panel.grid.minor.x = element_blank(), # Elimina líneas verticales delgadas
+    panel.grid.major.x = element_line(linetype = "dashed", color = "gray80") # Líneas de tiempo punteadas
+  )
+
+# 3. Mostrar el gráfico
+gantt_chart
+
+```
+
+# PLANIFICACION
+
+-   Avance Planificado
+-   Avance Real
+-   Avance Temporal
 
 ```{r}
 # Cargar la librería ggplot2
@@ -106,16 +301,15 @@ print(grafico_avance)
 # Puedes usar geom_text, pero requiere calcular la posición, por eso es opcional
 ```
 
+# COSTOS
 
-COSTOS
-===========
+-   Presupuesto de obra
+-   Presupuesto erogado
+-   Presupuesto final a termino
+-   Avance financiero
 
-* Presupuesto de obra
-* Presupuesto erogado
-* Presupuesto final a termino
-* Avance financiero
+| Valor planificado | Valor Ganado | Costo Actual | SPI  | CPI  |
+|-------------------|--------------|--------------|------|------|
+| \$515161          | \$165151     | \$13515131   | 0.91 | 1.05 |
 
-|Valor planificado | Valor Ganado | Costo Actual | SPI | CPI|
-|--------------|--------------|--------------|-----------|-------|
-|$515161|$165151|$13515131|0.91|1.05
-
+------------------------------------------------------------------------
