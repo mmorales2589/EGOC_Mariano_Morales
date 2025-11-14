@@ -235,104 +235,160 @@ gantt_chart
 
 # PLANIFICACION
 
+### Datos
+
 -   Avance Planificado
 -   Avance Real
 -   Avance Temporal
 
+----------------
+
+### Grafico
+
 ```{r}
-# Cargar la librería ggplot2
+
+## Bloque de código R para el gráfico de avance mensual
+
+# Cargar librerías necesarias
+# install.packages(c("tidyverse", "scales"))
+library(tidyverse)
 library(ggplot2)
-library(dplyr) # Para manipulación de datos, útil para el formato largo
+library(scales) 
 
-# --- 1. Preparar los datos ---
-meses <- factor(
-    c("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"),
-    levels = c("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-               "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre")
+# --- PARÁMETROS ---
+DURACION_MESES <- 48
+TOTAL_PROGRESO <- 100
+
+# 1. GENERACIÓN DEL AVANCE PLANIFICADO (Constante)
+# Avance mensual constante: 100 / 48
+avance_planificado <- rep(TOTAL_PROGRESO / DURACION_MESES, DURACION_MESES)
+
+# 2. GENERACIÓN Y ESCALADO DEL AVANCE REAL (Variable)
+set.seed(42) # Fija la semilla para reproducibilidad de los números aleatorios
+# Generar 48 valores aleatorios entre 1.5 y 2.5
+avance_real_raw <- runif(DURACION_MESES, min = 1.5, max = 2.5)
+
+# Ajustar los valores para que su suma total sea EXACTAMENTE 100%
+factor_ajuste <- TOTAL_PROGRESO / sum(avance_real_raw)
+avance_real <- avance_real_raw * factor_ajuste
+
+# Comprobación (opcional): sum(avance_real) debe ser 100
+# print(sum(avance_real)) 
+
+# 3. CONSOLIDACIÓN DE DATOS
+df_avance <- data.frame(
+  Mes = 1:DURACION_MESES,
+  Planificado = avance_planificado,
+  Real = avance_real
 )
 
-# Avance Teórico (100% en 12 meses, 100/12 ≈ 8.33%)
-avance_teorico <- rep(100/12, 12)
+# 4. TRANSFORMAR A FORMATO LARGO (Necesario para ggplot con barras agrupadas)
+df_long <- df_avance %>%
+  pivot_longer(
+    cols = c(Planificado, Real),
+    names_to = "Tipo_Avance",
+    values_to = "Porcentaje"
+  )
 
-# Avance Real (tus valores proporcionados)
-avance_real <- c(20, 5, 8, 86, 21, 14, 65, 26, 0, 0, 0, 0)
+# 5. GENERACIÓN DEL GRÁFICO DE BARRAS
+avance_plot <- ggplot(df_long, aes(x = factor(Mes), y = Porcentaje, fill = Tipo_Avance)) +
+  
+  # Usar geom_col (barras) con position = "dodge" para ponerlas lado a lado
+  geom_col(position = "dodge") +
+  
+  # Colores y etiquetas
+  scale_fill_manual(
+    values = c("Planificado" = "#2c7bb6", "Real" = "#fdae61"), # Azul vs. Naranja
+    labels = c("Planificado", "Real")
+  ) +
+  
+  # Etiquetas y títulos
+  labs(
+    title = "Avance Mensual: Planificado vs. Real",
+    subtitle = paste0("Avance planificado constante (", round(TOTAL_PROGRESO / DURACION_MESES, 2), "% mensual)"),
+    x = "Mes de Obra",
+    y = "Avance Mensual (%)",
+    fill = "Métrica"
+  ) +
+  
+  # Formatear el eje Y como porcentaje
+  scale_y_continuous(
+      labels = label_percent(scale = 1),
+      breaks = pretty_breaks(n = 8)
+  ) +
+  
+  # Tema y ajustes visuales
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, size = 7), # Rotar etiquetas X
+    legend.position = "top",
+    panel.grid.major.x = element_blank() # Eliminar líneas de grilla verticales
+  )
 
-# Crear el data frame inicial
-datos_avance <- data.frame(
-    Mes = meses,
-    Teorico = avance_teorico,
-    Real = avance_real
-)
+# Imprimir el gráfico
+print(avance_plot)
 
-# Convertir a formato largo para ggplot2
-# Esto crea una fila para cada Mes/TipoAvance/Porcentaje
-datos_largo <- datos_avance %>%
-    tidyr::pivot_longer(
-        cols = c(Teorico, Real),
-        names_to = "TipoAvance",
-        values_to = "Porcentaje"
-    )
-
-# --- 2. Crear el Gráfico con ggplot2 ---
-grafico_avance <- ggplot(datos_largo, aes(x = Mes, y = Porcentaje, fill = TipoAvance)) +
-    # Geometría de Barras. position = "dodge" coloca las barras una al lado de la otra
-    geom_bar(stat = "identity", position = "dodge", width = 0.8) +
-    # Etiquetas de ejes y título
-    labs(
-        title = "Avance de Obra: Teórico vs. Real (Acumulado Mensual)",
-        x = "Mes",
-        y = "Avance (%)",
-        fill = "Tipo de Avance" # Título de la leyenda
-    ) +
-    # Personalizar colores
-    scale_fill_manual(values = c("Teorico" = "#4C78A8", "Real" = "#F58518")) +
-    # Opcional: Ajustar el rango del eje Y para que vaya hasta 100
-    ylim(0, max(datos_largo$Porcentaje) + 5) +
-    # Tema para mejorar la apariencia visual (ej: tema clásico)
-    theme_classic() +
-    # Girar las etiquetas del eje X si son muy largas (no es necesario aquí, pero útil)
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# Mostrar el gráfico
-print(grafico_avance)
-
-# Opcional: Gráfico con etiquetas de valor en las barras (más complejo)
-# Puedes usar geom_text, pero requiere calcular la posición, por eso es opcional
 ```
 
+
 # COSTOS
+
+### Datos
 
 -   Presupuesto de obra
 -   Presupuesto erogado
 -   Presupuesto final a termino
 -   Avance financiero
 
-| Valor planificado | Valor Ganado | Costo Actual | SPI  | CPI  |
-|-------------------|--------------|--------------|------|------|
-| \$515161          | \$165151     | \$13515131   | 0.91 | 1.05 |
+| Seguimiento | Valor planificado | Valor Ganado | Costo Actual | SPI  | CPI  |
+|-------------|-------------------|--------------|--------------|------|------|
+| Cuatrimestre 1 | $2.827.486.693,58 | $2.720.977.795.88 | $2.681.660.372.73 | 0.962 | 1.015 |
+| Cuatrimestre 2 | $5.654.973.387,17 | $5.679.862.390,17 | $ 5.522.352.893,35| 1,004 | 1,029 |
+| Cuatrimestre 3 | $8.482.460.080,75 | $8.504.914.182,87| $ 8.422.067.978,07 | 1,003 | 1,010 |
+| Cuatrimestre 4 | $11.309.946.774,33 | $11.382.601.790,03 | $ 11.422.647.583,14 | 1,006 | 0,996 |
+| Cuatrimestre 5 | $14.137.433.467,92| $14.289.682.992,85| $ 14.275.432.715,57 | 1,011 | 1,001 |
+| Cuatrimestre 6 | $16.964.920.161,50 | $16.979.132.331,20 | $ 17.222.278.797,84 | 1,001 | 0,986 |
 
-------------------------------------------------------------------------
+--------------------------------------------------------------
+
+### Grafico
 
 ```{r}
 
 ## Bloque de código R para tu archivo .Rmd
-# Instala y carga la librería 'tidyverse' si no lo has hecho
-# install.packages("tidyverse")
+# Instala y carga las librerías necesarias
+# install.packages(c("tidyverse", "scales"))
 library(tidyverse)
 library(ggplot2)
+library(scales) # Necesario para formatear números grandes en el eje Y
 
-# 1. DATOS DE EJEMPLO
-# Reemplaza estos datos con la información real de tu proyecto
-eva_data <- data.frame(
-  Periodo = 1:10,
-  PV = c(10, 25, 45, 70, 90, 115, 135, 150, 160, 170), # Valor Planificado (Planned Value)
-  EV = c(10, 20, 35, 55, 75, 95, 110, 125, 135, 140), # Valor Ganado (Earned Value)
-  AC = c(12, 22, 40, 60, 80, 105, 120, 140, 155, 165)  # Costo Real (Actual Cost)
-)
+# 1. PARÁMETROS DEL PROYECTO
+DURACION_MESES <- 48
+PRESUPUESTO_TOTAL <- 33929840323
 
-# 2. TRANSFORMACIÓN DE DATOS
-# Transformar a formato "largo" para facilitar la graficación con ggplot2
+# 2. GENERACIÓN DE DATOS SIMULADOS (Curva S)
+# Creamos un vector de períodos
+Periodo <- 1:DURACION_MESES
+
+# Generamos el Valor Planificado (PV) usando una curva sigmoide (S-curve)
+# que culmina en el presupuesto total.
+p_norm <- plogis(Periodo, location = DURACION_MESES / 2, scale = DURACION_MESES / 6)
+PV <- (p_norm / max(p_norm)) * PRESUPUESTO_TOTAL
+
+# Generamos el Valor Ganado (EV) y el Costo Real (AC)
+# - EV simula un retraso de aproximadamente 3 meses y una ligera ineficiencia (0.98)
+# - AC simula un sobrecosto (CPI de 0.90, por lo que el gasto es 1/0.90 ≈ 1.11 veces el valor ganado)
+EV <- lag(PV, n = 3, default = 0) * 0.98
+AC <- EV * 1.11 
+
+# Aseguramos que EV y AC no sean mayores que el PV en el mes 1
+EV[1:3] <- PV[1:3] * 0.9
+AC[1:3] <- EV[1:3] * 1.1
+
+# 3. CONSOLIDACIÓN Y TRANSFORMACIÓN
+eva_data <- data.frame(Periodo, PV, EV, AC)
+
+# Transformar a formato "largo" para ggplot2
 eva_long <- eva_data %>%
   pivot_longer(
     cols = c(PV, EV, AC),
@@ -340,14 +396,14 @@ eva_long <- eva_data %>%
     values_to = "Valor"
   )
 
-# 3. GENERACIÓN DEL GRÁFICO
+# 4. GENERACIÓN DEL GRÁFICO
 eva_plot <- ggplot(eva_long, aes(x = Periodo, y = Valor, color = Metrica)) +
   
-  # Líneas para las métricas
+  # Gráfico de líneas y puntos
   geom_line(linewidth = 1.2) +
-  geom_point(size = 3) +
+  geom_point(size = 1.5) +
   
-  # Asignación manual de colores y etiquetas de leyenda
+  # Asignación de colores y etiquetas
   scale_color_manual(
     values = c("PV" = "blue", "EV" = "darkgreen", "AC" = "red"),
     labels = c("AC" = "Costo Real (AC)", "EV" = "Valor Ganado (EV)", "PV" = "Valor Planificado (PV)")
@@ -355,12 +411,21 @@ eva_plot <- ggplot(eva_long, aes(x = Periodo, y = Valor, color = Metrica)) +
   
   # Etiquetas y títulos
   labs(
-    title = "Análisis de Valor Ganado (EVA)",
-    subtitle = "Comparación de Valor Planificado, Ganado y Costo Real",
-    x = "Período (Ej. Semana/Mes)",
-    y = "Valor Acumulado (Ej. $)",
+    title = "Análisis de Valor Ganado (EVA) - Proyecto 48 Meses",
+    subtitle = paste0("Presupuesto Total (BAC): $", format(PRESUPUESTO_TOTAL, big.mark = ",", scientific = FALSE)),
+    x = "Período (Mes)",
+    y = "Valor Acumulado (Miles de Millones $)",
     color = "Métrica del Proyecto"
   ) +
+  
+  # Formato de eje Y para números grandes
+  scale_y_continuous(
+    labels = label_number(scale = 1e-9, suffix = ""), # Escala de 10^9
+    breaks = pretty_breaks(n = 10)
+  ) +
+  
+  # Formato de eje X para mostrar los 48 meses
+  scale_x_continuous(breaks = seq(0, DURACION_MESES, by = 6)) +
   
   # Tema visual
   theme_minimal() +
@@ -368,12 +433,6 @@ eva_plot <- ggplot(eva_long, aes(x = Periodo, y = Valor, color = Metrica)) +
     legend.position = "bottom",
     plot.title = element_text(hjust = 0.5, face = "bold"),
     plot.subtitle = element_text(hjust = 0.5)
-  ) +
-  
-  # Ajustar el eje Y para mejor visualización
-  scale_y_continuous(
-      breaks = seq(0, max(eva_data$PV, eva_data$AC) * 1.1, by = 25),
-      expand = expansion(mult = c(0.05, 0.1)) # Añade un poco de espacio
   )
 
 # Imprimir el gráfico
