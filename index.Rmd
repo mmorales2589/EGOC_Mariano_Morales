@@ -313,3 +313,71 @@ print(grafico_avance)
 | \$515161          | \$165151     | \$13515131   | 0.91 | 1.05 |
 
 ------------------------------------------------------------------------
+
+```{r}
+
+## Bloque de código R para tu archivo .Rmd
+# Instala y carga la librería 'tidyverse' si no lo has hecho
+# install.packages("tidyverse")
+library(tidyverse)
+library(ggplot2)
+
+# 1. DATOS DE EJEMPLO
+# Reemplaza estos datos con la información real de tu proyecto
+eva_data <- data.frame(
+  Periodo = 1:10,
+  PV = c(10, 25, 45, 70, 90, 115, 135, 150, 160, 170), # Valor Planificado (Planned Value)
+  EV = c(10, 20, 35, 55, 75, 95, 110, 125, 135, 140), # Valor Ganado (Earned Value)
+  AC = c(12, 22, 40, 60, 80, 105, 120, 140, 155, 165)  # Costo Real (Actual Cost)
+)
+
+# 2. TRANSFORMACIÓN DE DATOS
+# Transformar a formato "largo" para facilitar la graficación con ggplot2
+eva_long <- eva_data %>%
+  pivot_longer(
+    cols = c(PV, EV, AC),
+    names_to = "Metrica",
+    values_to = "Valor"
+  )
+
+# 3. GENERACIÓN DEL GRÁFICO
+eva_plot <- ggplot(eva_long, aes(x = Periodo, y = Valor, color = Metrica)) +
+  
+  # Líneas para las métricas
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 3) +
+  
+  # Asignación manual de colores y etiquetas de leyenda
+  scale_color_manual(
+    values = c("PV" = "blue", "EV" = "darkgreen", "AC" = "red"),
+    labels = c("AC" = "Costo Real (AC)", "EV" = "Valor Ganado (EV)", "PV" = "Valor Planificado (PV)")
+  ) +
+  
+  # Etiquetas y títulos
+  labs(
+    title = "Análisis de Valor Ganado (EVA)",
+    subtitle = "Comparación de Valor Planificado, Ganado y Costo Real",
+    x = "Período (Ej. Semana/Mes)",
+    y = "Valor Acumulado (Ej. $)",
+    color = "Métrica del Proyecto"
+  ) +
+  
+  # Tema visual
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5)
+  ) +
+  
+  # Ajustar el eje Y para mejor visualización
+  scale_y_continuous(
+      breaks = seq(0, max(eva_data$PV, eva_data$AC) * 1.1, by = 25),
+      expand = expansion(mult = c(0.05, 0.1)) # Añade un poco de espacio
+  )
+
+# Imprimir el gráfico
+print(eva_plot)
+
+```
+
